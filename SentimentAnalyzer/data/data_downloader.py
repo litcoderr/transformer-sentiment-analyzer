@@ -2,7 +2,7 @@ import os
 import urllib.request as request
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-DATASET_DIR = os.path.join(CURRENT_DIR, "dataset")
+DATASET_DIR = os.path.join(CURRENT_DIR, "raw")
 
 def download_data():
     train_data_name = os.path.join(DATASET_DIR, "train.txt")
@@ -20,3 +20,6 @@ def download_data():
                             filename=test_data_name)
     else:
         print("test data exists")
+
+if __name__ == "__main__":
+    download_data()
