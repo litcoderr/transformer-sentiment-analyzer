@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from SentimentAnalyzer import App
+from SentimentAnalyzer.model import ModelConfig
 from SentimentAnalyzer.data.dataset import NaverTrainDataset, NaverTestDataset
 
 def collate_fn(b):
@@ -42,6 +43,7 @@ def validate_checkpoint(path):
 class TrainConfig(Serializable):
     def __init__(self):
         super(TrainConfig, self).__init__()
+        self.config_file = None
         self.device = "cuda"
         # dataloader options
         self.batch_size = 16
@@ -52,11 +54,16 @@ class TrainConfig(Serializable):
         # where the training should start from
         self.checkpoint = 0
 
+        # model configuration
+        self.model_config = ModelConfig()
+
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.realpath(__file__))
 
     config = TrainConfig()
     config.parse()
+    if config.config_file:
+        _, config = TrainConfig.import_json(path=config.config_file)
 
     train_dataset = NaverTrainDataset()
     train_dataloader = DataLoader(train_dataset,
@@ -71,7 +78,7 @@ if __name__ == "__main__":
                                                   "checkpoints",
                                                   "{}.ckpt".format(config.checkpoint)))
     
-    app = App(device=config.device, checkpoint=ckpt_path)
+    app = App(model_config=config.model_config, checkpoint=ckpt_path, device=config.device)
 
     batch_idx = start_batch_idx
     while True:
@@ -79,10 +86,13 @@ if __name__ == "__main__":
         for (tensor, label) in pbar:
             pbar.set_description("[batch #{}]".format(batch_idx))
 
-            # TODO forward model
-            pass
+            output = app.forward(tensor, is_train=True)
+
+            # TODO compute gradient
+            # TODO back propagate
+            break
+        break
             
         batch_idx += 1
-
 
         # TODO save checkpoint / config
