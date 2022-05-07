@@ -6,21 +6,27 @@ from typing import List, Union
 
 
 class App:
-    def __init__(self, device="cuda"):
+    def __init__(self, device="cuda", checkpoint=None):
         self.device = device
+        self.checkpoint = checkpoint
         self.tokenizer = BertTokenizerFast.from_pretrained("kykim/bertshared-kor-base")
 
-    def __call__(self, batch: List[Union[str, int]], preprocessed=False):
+        # TODO init model
+
+        # TODO load checkpoint if exists
+
+    def __call__(self, batch: List[str]):
         # preprocess text to tensor
-        if not preprocessed:
-            tensor = self.preprocess(batch)
+        tensor = self.preprocess(batch)
 
         # forward
+        fwd_res = self.forward(tensor, is_train=False)
 
         # postprocess tensor to text
         pass
 
-    def forward(self, input_tensor: torch.Tensor, is_train=False):
+    def forward(self, input_tensor: torch.Tensor, is_train=True):
+        print(input_tensor)
         pass
 
     def preprocess(self, batch_of_text: List[str]):
