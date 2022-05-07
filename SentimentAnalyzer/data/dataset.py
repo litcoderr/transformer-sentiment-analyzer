@@ -1,6 +1,7 @@
 import os
 import pickle
 import torch
+import torch.nn.functional as F
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
@@ -54,20 +55,36 @@ class NaverTestDataset(NaverDataset):
 if __name__ == "__main__":
     def collate_fn(b):
         max_len = 0
-        # TODO append tensor list
+        tensor_list = []
+        label_list = []
         for ((ids, text, label), (tensor, _label)) in b:
             t: torch.Tensor = torch.Tensor(tensor)
             if max_len < t.shape[0]:
                 max_len = t.shape[0]
-            
+            tensor_list.append(t)
+            label_tensor = torch.Tensor([_label])
+            label_list.append(torch.unsqueeze(label_tensor, 0))
+
+        padded_list = []
+        for t in tensor_list:
+            t = torch.unsqueeze(t, 0)
+            padded = F.pad(t, (0,max_len-t.shape[1]), "constant", 0)
+            padded_list.append(padded)
+        batch_tensor = torch.cat(padded_list, 0) 
+
+        batch_label = torch.cat(label_list, 0)
+        return batch_tensor, batch_label
 
     test_dataset = NaverTestDataset()
     dataloader = DataLoader(test_dataset,
                             batch_size=16,
                             shuffle=True,
-                            num_workers=5,
+                            num_workers=8,
                             collate_fn=collate_fn)
 
     for i_batch, batch in enumerate(dataloader):
         if i_batch == 1:
             break
+        print(type(batch))
+        print(batch[0].shape)
+        print(batch[1].shape)
