@@ -4,8 +4,7 @@ import transformers
 from transformers import BertTokenizerFast, EncoderDecoderModel
 from typing import List, Union
 
-from .model import ModelConfig
-from .model.transformer import Transformer
+from .model.transformer import ModelConfig, Transformer
 
 
 class App:
@@ -34,15 +33,14 @@ class App:
     def forward(self, input_tensor: torch.Tensor, is_train=True):
         input_tensor = input_tensor.to(self.device)
         output_tensor = self.model(input_tensor)
-        print(input_tensor)
-        print(output_tensor)
 
     def preprocess(self, batch_of_text: List[str]):
         max_length = 0
         tensor_list = []
         for s in batch_of_text:
             # torch.Tensor: [1, token_length]
-            input_ids = self.tokenizer.encode(s, return_tensors='pt').to(self.device)
+            input_ids = self.tokenizer.encode(s, return_tensors='pt').to(self.device, dtype=torch.int32)
+            # TODO typecast to integer
             tensor_list.append(input_ids)
 
             if max_length < input_ids.shape[1]:

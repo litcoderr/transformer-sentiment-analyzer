@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from SentimentAnalyzer import App
-from SentimentAnalyzer.model import ModelConfig
+from SentimentAnalyzer.model.transformer import ModelConfig
 from SentimentAnalyzer.data.dataset import NaverTrainDataset, NaverTestDataset
 
 def collate_fn(b):
@@ -14,7 +14,7 @@ def collate_fn(b):
     tensor_list = []
     label_list = []
     for ((ids, text, label), (tensor, _label)) in b:
-        t: torch.Tensor = torch.Tensor(tensor)
+        t: torch.Tensor = torch.tensor(tensor, dtype=torch.int32)
         if max_len < t.shape[0]:
             max_len = t.shape[0]
         tensor_list.append(t)
