@@ -6,14 +6,31 @@ class SelfAttnConfig(Serializable):
     def __init__(self, input_size):
         super(SelfAttnConfig, self).__init__()
         self.input_size = input_size
+        self.hidden_dim = 512
 
 class SelfAttention(nn.Module):
     def __init__(self, config: SelfAttnConfig):
         super(SelfAttention, self).__init__()
         self.config = config
 
+        self.w_query = nn.Linear(self.config.input_size, self.config.hidden_dim)
+        self.w_key = nn.Linear(self.config.input_size, self.config.hidden_dim)
+        self.w_value = nn.Linear(self.config.input_size, self.config.hidden_dim)
+
     def forward(self, x):
         # x: [b, l, input_size]
+        # query: [b, l, hidden_dim]
+        query = self.w_query(x)
+        # key: [b, l, hidden_dim]
+        key = self.w_key(x)
+        # value: [b, l, hidden_dim]
+        value = self.w_value(x)
+
+        # q_k(query to key): [b, l, l]
+        q_k = torch.matmul(query, torch.permute(key, (0, 2, 1)))
+        # TODO apply softmax
+        # TODO compute query to value
+
         return x
 
 class MultiHeadAttnConfig(Serializable):
@@ -26,8 +43,8 @@ class MultiHeadAttention(nn.Module):
     def __init__(self, config: MultiHeadAttnConfig):
         super(MultiHeadAttention, self).__init__()
         self.config = config
-        self.attns = [SelfAttention(config=self.config.attn_config)
-                 for _ in range(self.config.n_head)]
+        self.attns = nn.ModuleList([SelfAttention(config=self.config.attn_config)
+                 for _ in range(self.config.n_head)])
         self.linear = nn.Linear(self.config.attn_config.input_size*self.config.n_head,
                                 self.config.attn_config.input_size)
 
