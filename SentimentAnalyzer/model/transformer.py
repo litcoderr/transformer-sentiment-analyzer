@@ -2,6 +2,8 @@ from importify import Serializable
 import torch
 import torch.nn as nn
 
+from .attn import MultiHeadAttention, MultiHeadAttnConfig, SelfAttnConfig
+
 class ModelConfig(Serializable):
     def __init__(self):
         super(ModelConfig, self).__init__()
@@ -37,6 +39,11 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
         self.config = config
 
+        self.attn = MultiHeadAttention(
+            config=MultiHeadAttnConfig(
+                attn_config=SelfAttnConfig(
+                    input_size=self.config.input_size)))
+
     def forward(self, x):
-        # TODO implement encoder
+        res = self.attn(x)
         return x
