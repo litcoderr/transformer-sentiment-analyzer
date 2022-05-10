@@ -87,6 +87,7 @@ if __name__ == "__main__":
             pbar.set_description("[batch #{}]".format(batch_idx))
 
             output = app.forward(tensor, is_train=True)
+            print(output.shape)
 
             # TODO compute gradient
             # TODO back propagate

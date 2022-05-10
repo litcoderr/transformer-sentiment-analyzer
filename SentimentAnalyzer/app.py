@@ -33,6 +33,7 @@ class App:
     def forward(self, input_tensor: torch.Tensor, is_train=True):
         input_tensor = input_tensor.to(self.device)
         output_tensor = self.model(input_tensor)
+        return output_tensor
 
     def preprocess(self, batch_of_text: List[str]):
         max_length = 0

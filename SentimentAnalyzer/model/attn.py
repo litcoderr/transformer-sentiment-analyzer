@@ -1,6 +1,7 @@
 from importify import Serializable
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class SelfAttnConfig(Serializable):
     def __init__(self, input_size):
@@ -28,10 +29,12 @@ class SelfAttention(nn.Module):
 
         # q_k(query to key): [b, l, l]
         q_k = torch.matmul(query, torch.permute(key, (0, 2, 1)))
-        # TODO apply softmax
-        # TODO compute query to value
+        q_k = F.softmax(q_k, dim=2)
 
-        return x
+        # q_v(query to value): [b, l, hidden_dim]
+        q_v = torch.matmul(q_k, value)
+
+        return q_v
 
 class MultiHeadAttnConfig(Serializable):
     def __init__(self, attn_config: SelfAttnConfig):
