@@ -51,7 +51,7 @@ class TrainConfig(Serializable):
         # dataloader options
         self.batch_size = 32
         self.shuffle = True
-        self.num_workers = 16
+        self.num_workers = 8
         
         # learning rate
         self.lr = 0.001
@@ -59,6 +59,10 @@ class TrainConfig(Serializable):
         # checkpoint option
         # where the training should start from
         self.checkpoint = 0
+        self.save_rate = 10 # every (ckpt_rate) ammount of epoch, save ckpt and config file
+
+        # test option
+        self.test_rate = 10 # every (test_rate) ammount of epoch, perform testing
 
         # model configuration
         self.model_config = ModelConfig()
@@ -75,6 +79,12 @@ if __name__ == "__main__":
     train_dataloader = DataLoader(train_dataset,
                             batch_size=config.batch_size,
                             shuffle=config.shuffle,
+                            num_workers=config.num_workers,
+                            collate_fn=collate_fn)
+    test_dataset = NaverTestDataset()
+    test_dataloader = DataLoader(test_dataset,
+                            batch_size=config.batch_size,
+                            shuffle=False,
                             num_workers=config.num_workers,
                             collate_fn=collate_fn)
 
@@ -95,8 +105,10 @@ if __name__ == "__main__":
     epoch_idx = start_epoch_idx
     while True:
         pbar = tqdm(train_dataloader)
+        pbar.set_description("[train epoch #{}]".format(epoch_idx))
         for (tensor, label) in pbar:
-            pbar.set_description("[epoch #{}]".format(epoch_idx))
+            # TODO remove breaking after test impelmentation
+            break
 
             # output: [b, n_classes]
             # label: [b]
@@ -111,6 +123,11 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step()
             
-        epoch_idx += 1
-
+        # TODO test using test dataset
+        if epoch_idx % config.test_rate == 0:
+            print("test")
+            break
         # TODO save checkpoint / config
+        # TODO implement monitoring usint Tensorboard
+
+        epoch_idx += 1
