@@ -31,6 +31,10 @@ class App:
         pass
 
     def forward(self, input_tensor: torch.Tensor, is_train=True):
+        if is_train:
+            self.model.train()
+        else:
+            self.model.eval()
         input_tensor = input_tensor.to(self.device)
         output_tensor = self.model(input_tensor)
         return output_tensor

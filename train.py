@@ -104,16 +104,16 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(app.model.parameters(), lr=config.lr)
 
     # tensorboard
-    writer = SummaryWriter()
+    log_dir = os.path.join(current_dir, "tensorlog")
+    writer = SummaryWriter(log_dir=log_dir)
 
     epoch_idx = start_epoch_idx
     while True:
+        n_train_iter = len(train_dataloader)
         pbar = tqdm(train_dataloader)
         pbar.set_description("[train epoch #{}]".format(epoch_idx))
-        for (tensor, label) in pbar:
-            # TODO remove breaking after test impelmentation
-            break
-
+        for i, (tensor, label) in enumerate(pbar):
+            label = label.to(config.device)
             # output: [b, n_classes]
             # label: [b]
             output = app.forward(tensor, is_train=True)
@@ -128,8 +128,11 @@ if __name__ == "__main__":
             acc = (true_pos / N) * 100
 
             # compute loss
-            label = label.to(config.device)
             loss = criterion(input=output, target=label)
+
+            # log on tensorboard
+            writer.add_scalar("Loss/train", loss, n_train_iter*epoch_idx+i)
+            writer.add_scalar("Acc/train", acc, n_train_iter*epoch_idx+i)
 
             # back propagate
             optimizer.zero_grad()
@@ -138,28 +141,38 @@ if __name__ == "__main__":
             
         # TODO test using test dataset
         if epoch_idx % config.test_rate == 0:
-            pbar = tqdm(test_dataloader)
-            pbar.set_description("[test]")
-            for (tensor, label) in pbar:
-                # output: [b, n_classes]
-                # label: [b]
-                output = app.forward(tensor, is_train=False)
-                label = label.to(config.device)
+            with torch.no_grad():
+                pbar = tqdm(test_dataloader)
+                pbar.set_description("[test]")
 
-                # compute loss
-                loss = criterion(input=output, target=label)
+                total_loss = 0
+                total_acc = 0
+                for (tensor, label) in pbar:
+                    # output: [b, n_classes]
+                    # label: [b]
+                    output = app.forward(tensor, is_train=False)
+                    label = label.to(config.device)
 
-                # compute accuracy
-                # argmax: [b]
-                argmax = torch.squeeze(torch.argmax(output, dim=1, keepdim=True), 1)
-                # compared: [b]
-                compared = torch.eq(argmax, label)
-                N = compared.shape[0]
-                true_pos = torch.sum(compared)
-                acc = (true_pos / N) * 100
-                break
-        break
+                    # compute loss
+                    loss = criterion(input=output, target=label)
+                    total_loss += loss
+
+                    # compute accuracy
+                    # argmax: [b]
+                    argmax = torch.squeeze(torch.argmax(output, dim=1, keepdim=True), 1)
+                    # compared: [b]
+                    compared = torch.eq(argmax, label)
+                    N = compared.shape[0]
+                    true_pos = torch.sum(compared)
+                    total_acc += true_pos
+                total_acc = total_acc.cpu().numpy()
+                total_loss /= len(test_dataloader) 
+                total_acc = (total_acc / len(test_dataset)) * 100
+
+                writer.add_scalar("Loss/test", total_loss, n_train_iter*epoch_idx)
+                writer.add_scalar("Acc/test", total_acc, n_train_iter*epoch_idx)
         # TODO save checkpoint / config
         # TODO implement monitoring usint Tensorboard
 
         epoch_idx += 1
+    writer.close()
