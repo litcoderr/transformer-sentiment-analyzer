@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 from SentimentAnalyzer import App
 from SentimentAnalyzer.model.transformer import ModelConfig
@@ -102,6 +103,9 @@ if __name__ == "__main__":
     # optimizer
     optimizer = torch.optim.Adam(app.model.parameters(), lr=config.lr)
 
+    # tensorboard
+    writer = SummaryWriter()
+
     epoch_idx = start_epoch_idx
     while True:
         pbar = tqdm(train_dataloader)
@@ -114,6 +118,15 @@ if __name__ == "__main__":
             # label: [b]
             output = app.forward(tensor, is_train=True)
 
+            # compute accuracy
+            # argmax: [b]
+            argmax = torch.squeeze(torch.argmax(output, dim=1, keepdim=True), 1)
+            # compared: [b]
+            compared = torch.eq(argmax, label)
+            N = compared.shape[0]
+            true_pos = torch.sum(compared)
+            acc = (true_pos / N) * 100
+
             # compute loss
             label = label.to(config.device)
             loss = criterion(input=output, target=label)
@@ -125,8 +138,27 @@ if __name__ == "__main__":
             
         # TODO test using test dataset
         if epoch_idx % config.test_rate == 0:
-            print("test")
-            break
+            pbar = tqdm(test_dataloader)
+            pbar.set_description("[test]")
+            for (tensor, label) in pbar:
+                # output: [b, n_classes]
+                # label: [b]
+                output = app.forward(tensor, is_train=False)
+                label = label.to(config.device)
+
+                # compute loss
+                loss = criterion(input=output, target=label)
+
+                # compute accuracy
+                # argmax: [b]
+                argmax = torch.squeeze(torch.argmax(output, dim=1, keepdim=True), 1)
+                # compared: [b]
+                compared = torch.eq(argmax, label)
+                N = compared.shape[0]
+                true_pos = torch.sum(compared)
+                acc = (true_pos / N) * 100
+                break
+        break
         # TODO save checkpoint / config
         # TODO implement monitoring usint Tensorboard
 
