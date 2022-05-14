@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn.functional as F
 import transformers
@@ -8,17 +9,20 @@ from .model.transformer import ModelConfig, Transformer
 
 
 class App:
-    def __init__(self, model_config: ModelConfig, checkpoint=None, device="cuda"):
-        self.model_config = model_config # model configuration
-        self.checkpoint = checkpoint # checkpoint file path
+    def __init__(self, config, device="cuda"):
+        self.model_config = config.model_config # model configuration
         self.device = device
 
         self.tokenizer = BertTokenizerFast.from_pretrained("kykim/bertshared-kor-base")
 
-        self.model = Transformer(config=model_config)
+        self.model = Transformer(config=self.model_config)
         self.model = self.model.to(self.device)
 
         # TODO load checkpoint if exists
+        if os.path.exists(config.ckpt_path):
+            checkpoint = torch.load(config.ckpt_path)
+            self.model.load_state_dict(checkpoint["checkpoint"])
+            print("loaded {}...".format(config.ckpt_path))
 
     def __call__(self, batch: List[str]):
         # preprocess text to tensor

@@ -1,4 +1,5 @@
 import os
+import secrets
 from tqdm import tqdm
 from importify import Serializable
 import torch
@@ -35,19 +36,12 @@ def collate_fn(b):
     batch_label = batch_label.long()
     return batch_tensor, batch_label
 
-def validate_checkpoint(path):
-    start_epoch_idx = 0
-    if os.path.exists(path):
-        # TODO check if valid
-        start_epoch_idx = int(path.split("/")[-1].split(".ckpt")[0])
-        return start_epoch_idx, path
-    else:
-        return start_epoch_idx, None
-
 class TrainConfig(Serializable):
     def __init__(self):
         super(TrainConfig, self).__init__()
-        self.config_file = None
+        self.version = "v1.0"
+        
+        self.config_file = ""
         self.device = "cuda"
         # dataloader options
         self.batch_size = 32
@@ -59,8 +53,9 @@ class TrainConfig(Serializable):
 
         # checkpoint option
         # where the training should start from
-        self.checkpoint = 0
-        self.save_rate = 10 # every (ckpt_rate) ammount of epoch, save ckpt and config file
+        self.start_idx = 0
+        self.ckpt_path = ""
+        self.save_rate = 1 # every (ckpt_rate) ammount of epoch, save ckpt and config file
 
         # test option
         self.test_rate = 10 # every (test_rate) ammount of epoch, perform testing
@@ -89,13 +84,10 @@ if __name__ == "__main__":
                             num_workers=config.num_workers,
                             collate_fn=collate_fn)
 
-    # TODO implement checkpointing process
-    start_epoch_idx, ckpt_path = validate_checkpoint(path=os.path.join(current_dir,
-                                                  "SentimentAnalyzer",
-                                                  "checkpoints",
-                                                  "{}.ckpt".format(config.checkpoint)))
+    # validate checkpoint
+    start_epoch_idx = config.start_idx
     
-    app = App(model_config=config.model_config, checkpoint=ckpt_path, device=config.device)
+    app = App(config=config, device=config.device)
 
     # criterion
     criterion = nn.CrossEntropyLoss()
@@ -112,6 +104,9 @@ if __name__ == "__main__":
         n_train_iter = len(train_dataloader)
         pbar = tqdm(train_dataloader)
         pbar.set_description("[train epoch #{}]".format(epoch_idx))
+
+        total_loss = 0
+        total_acc = 0
         for i, (tensor, label) in enumerate(pbar):
             label = label.to(config.device)
             # output: [b, n_classes]
@@ -125,21 +120,24 @@ if __name__ == "__main__":
             compared = torch.eq(argmax, label)
             N = compared.shape[0]
             true_pos = torch.sum(compared)
-            acc = (true_pos / N) * 100
+            total_acc += true_pos
 
             # compute loss
             loss = criterion(input=output, target=label)
-
-            # log on tensorboard
-            writer.add_scalar("Loss/train", loss, n_train_iter*epoch_idx+i)
-            writer.add_scalar("Acc/train", acc, n_train_iter*epoch_idx+i)
+            total_loss += loss
 
             # back propagate
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+        total_acc = total_acc.cpu().numpy()
+        total_loss /= len(train_dataset) 
+        total_acc = (total_acc / len(train_dataset)) * 100
+
+        writer.add_scalar("Loss/train", total_loss, epoch_idx)
+        writer.add_scalar("Acc/train", total_acc, epoch_idx)
             
-        # TODO test using test dataset
+        # test using test dataset
         if epoch_idx % config.test_rate == 0:
             with torch.no_grad():
                 pbar = tqdm(test_dataloader)
@@ -169,10 +167,23 @@ if __name__ == "__main__":
                 total_loss /= len(test_dataloader) 
                 total_acc = (total_acc / len(test_dataset)) * 100
 
-                writer.add_scalar("Loss/test", total_loss, n_train_iter*epoch_idx)
-                writer.add_scalar("Acc/test", total_acc, n_train_iter*epoch_idx)
-        # TODO save checkpoint / config
-        # TODO implement monitoring usint Tensorboard
+                writer.add_scalar("Loss/test", total_loss, epoch_idx)
+                writer.add_scalar("Acc/test", total_acc, epoch_idx)
+
+        # save checkpoint and config file
+        if epoch_idx % config.save_rate == 0:
+            base_ckpt_dir = os.path.join(current_dir, "SentimentAnalyzer", "checkpoints")
+            config_dir = os.path.join(base_ckpt_dir, "{}_{}.json".format(config.version, str(epoch_idx).zfill(5)))
+            ckpt_dir = os.path.join(base_ckpt_dir, "{}.ckpt".format(str(secrets.token_hex(nbytes=8))))
+
+            # save checkpoint
+            torch.save({
+                "checkpoint": app.model.state_dict()
+            }, ckpt_dir)
+            # save config file
+            config.start_idx = epoch_idx
+            config.ckpt_path = ckpt_dir
+            config.export_json(path=config_dir, ignore_error=True)
 
         epoch_idx += 1
     writer.close()
