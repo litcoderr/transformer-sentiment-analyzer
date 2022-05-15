@@ -55,7 +55,7 @@ class TrainConfig(Serializable):
         # where the training should start from
         self.start_idx = 0
         self.ckpt_path = ""
-        self.save_rate = 1 # every (ckpt_rate) ammount of epoch, save ckpt and config file
+        self.save_rate = 10 # every (ckpt_rate) ammount of epoch, save ckpt and config file
 
         # test option
         self.test_rate = 10 # every (test_rate) ammount of epoch, perform testing
@@ -163,6 +163,7 @@ if __name__ == "__main__":
                     N = compared.shape[0]
                     true_pos = torch.sum(compared)
                     total_acc += true_pos
+                    break
                 total_acc = total_acc.cpu().numpy()
                 total_loss /= len(test_dataloader) 
                 total_acc = (total_acc / len(test_dataset)) * 100

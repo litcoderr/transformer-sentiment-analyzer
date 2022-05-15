@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from collections import OrderedDict
 
+from .encoding import PositionalEncoding
 from .attn import MultiHeadAttention, MultiHeadAttnConfig, SelfAttnConfig
 
 class ModelConfig(Serializable):
@@ -23,19 +24,21 @@ class ModelConfig(Serializable):
         self.n_class = 2
 
 class Transformer(nn.Module):
-    def __init__(self, config: ModelConfig):
+    def __init__(self, config: ModelConfig, device):
         super(Transformer, self).__init__()
         self.config = config
 
         self.embedding = nn.Embedding(num_embeddings=self.config.tokenizer_size,
                                       embedding_dim=self.config.embedding_dim)
+        self.positional = PositionalEncoding(embedding_dim=self.config.embedding_dim, device=device)
         self.encoder = Encoder(config=self.config.encoder_config)
         self.fc1 = nn.Linear(self.config.embedding_dim, self.config.fc_dim)
         self.fc2 = nn.Linear(self.config.fc_dim, self.config.n_class)
 
     def forward(self, x):
         embedded = self.embedding(x)
-        encoder_output = self.encoder(embedded)
+        positional_encoded = self.positional(embedded)
+        encoder_output = self.encoder(positional_encoded)
         encoder_output = torch.mean(encoder_output, dim=1)
         latent = self.fc1(encoder_output)
         logit = self.fc2(latent)

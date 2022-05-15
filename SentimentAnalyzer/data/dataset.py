@@ -75,16 +75,29 @@ if __name__ == "__main__":
         batch_label = torch.cat(label_list, 0)
         return batch_tensor, batch_label
 
+    train_dataset = NaverTrainDataset()
     test_dataset = NaverTestDataset()
+
+    max_len = 0
+    for (ids, text, label), (tensor, _label) in train_dataset:
+        if len(tensor) > max_len:
+            max_len = len(tensor)
+    for (ids, text, label), (tensor, _label) in test_dataset:
+        if len(tensor) > max_len:
+            max_len = len(tensor)
+    print(max_len)
+
     dataloader = DataLoader(test_dataset,
                             batch_size=16,
                             shuffle=True,
                             num_workers=8,
                             collate_fn=collate_fn)
-
+    
+    """
     for i_batch, batch in enumerate(dataloader):
         if i_batch == 1:
             break
         print(type(batch))
         print(batch[0].shape)
         print(batch[1].shape)
+    """

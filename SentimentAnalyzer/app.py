@@ -15,7 +15,7 @@ class App:
 
         self.tokenizer = BertTokenizerFast.from_pretrained("kykim/bertshared-kor-base")
 
-        self.model = Transformer(config=self.model_config)
+        self.model = Transformer(config=self.model_config, device=self.device)
         self.model = self.model.to(self.device)
 
         # TODO load checkpoint if exists
