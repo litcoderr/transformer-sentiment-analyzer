@@ -131,7 +131,7 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step()
         total_acc = total_acc.cpu().numpy()
-        total_loss /= len(train_dataset) 
+        total_loss /= len(train_dataloader) 
         total_acc = (total_acc / len(train_dataset)) * 100
 
         writer.add_scalar("Loss/train", total_loss, epoch_idx)
@@ -163,7 +163,6 @@ if __name__ == "__main__":
                     N = compared.shape[0]
                     true_pos = torch.sum(compared)
                     total_acc += true_pos
-                    break
                 total_acc = total_acc.cpu().numpy()
                 total_loss /= len(test_dataloader) 
                 total_acc = (total_acc / len(test_dataset)) * 100
