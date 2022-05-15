@@ -181,7 +181,7 @@ if __name__ == "__main__":
                 "checkpoint": app.model.state_dict()
             }, ckpt_dir)
             # save config file
-            config.start_idx = epoch_idx
+            config.start_idx = epoch_idx+1
             config.ckpt_path = ckpt_dir
             config.export_json(path=config_dir, ignore_error=True)
 
