@@ -44,9 +44,9 @@ class TrainConfig(Serializable):
         self.config_file = ""
         self.device = "cuda"
         # dataloader options
-        self.batch_size = 32
+        self.batch_size = 16
         self.shuffle = True
-        self.num_workers = 8
+        self.num_workers = 4
         
         # learning rate
         self.lr = 0.001
@@ -115,28 +115,43 @@ if __name__ == "__main__":
 
             # compute accuracy
             # argmax: [b]
-            argmax = torch.squeeze(torch.argmax(output, dim=1, keepdim=True), 1)
+            argmax = torch.squeeze(torch.argmax(output.detach(), dim=1, keepdim=True), 1)
             # compared: [b]
-            compared = torch.eq(argmax, label)
+            compared = torch.eq(argmax, label.detach())
             N = compared.shape[0]
             true_pos = torch.sum(compared)
-            total_acc += true_pos
+            total_acc += true_pos.detach()
 
             # compute loss
             loss = criterion(input=output, target=label)
-            total_loss += loss
+            total_loss += loss.detach()
 
             # back propagate
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        total_acc = total_acc.cpu().numpy()
+        total_acc = total_acc.detach().cpu().numpy()
         total_loss /= len(train_dataset) 
         total_acc = (total_acc / len(train_dataset)) * 100
 
         writer.add_scalar("Loss/train", total_loss, epoch_idx)
         writer.add_scalar("Acc/train", total_acc, epoch_idx)
             
+        # save checkpoint and config file
+        if epoch_idx % config.save_rate == 0:
+            base_ckpt_dir = os.path.join(current_dir, "SentimentAnalyzer", "checkpoints")
+            config_dir = os.path.join(base_ckpt_dir, "{}_{}.json".format(config.version, str(epoch_idx).zfill(5)))
+            ckpt_dir = os.path.join(base_ckpt_dir, "{}.ckpt".format(str(secrets.token_hex(nbytes=8))))
+
+            # save checkpoint
+            torch.save({
+                "checkpoint": app.model.state_dict()
+            }, ckpt_dir)
+            # save config file
+            config.start_idx = epoch_idx+1
+            config.ckpt_path = ckpt_dir
+            config.export_json(path=config_dir, ignore_error=True)
+
         # test using test dataset
         if epoch_idx % config.test_rate == 0:
             with torch.no_grad():
@@ -153,37 +168,22 @@ if __name__ == "__main__":
 
                     # compute loss
                     loss = criterion(input=output, target=label)
-                    total_loss += loss
+                    total_loss += loss.detach()
 
                     # compute accuracy
                     # argmax: [b]
-                    argmax = torch.squeeze(torch.argmax(output, dim=1, keepdim=True), 1)
+                    argmax = torch.squeeze(torch.argmax(output.detach(), dim=1, keepdim=True), 1)
                     # compared: [b]
-                    compared = torch.eq(argmax, label)
+                    compared = torch.eq(argmax, label.detach())
                     N = compared.shape[0]
-                    true_pos = torch.sum(compared)
-                    total_acc += true_pos
-                total_acc = total_acc.cpu().numpy()
+                    true_pos = torch.sum(compared.detach())
+                    total_acc += true_pos.detach()
+                total_acc = total_acc.detach().cpu().numpy()
                 total_loss /= len(test_dataset) 
                 total_acc = (total_acc / len(test_dataset)) * 100
 
                 writer.add_scalar("Loss/test", total_loss, epoch_idx)
                 writer.add_scalar("Acc/test", total_acc, epoch_idx)
-
-        # save checkpoint and config file
-        if epoch_idx % config.save_rate == 0:
-            base_ckpt_dir = os.path.join(current_dir, "SentimentAnalyzer", "checkpoints")
-            config_dir = os.path.join(base_ckpt_dir, "{}_{}.json".format(config.version, str(epoch_idx).zfill(5)))
-            ckpt_dir = os.path.join(base_ckpt_dir, "{}.ckpt".format(str(secrets.token_hex(nbytes=8))))
-
-            # save checkpoint
-            torch.save({
-                "checkpoint": app.model.state_dict()
-            }, ckpt_dir)
-            # save config file
-            config.start_idx = epoch_idx+1
-            config.ckpt_path = ckpt_dir
-            config.export_json(path=config_dir, ignore_error=True)
 
         epoch_idx += 1
     writer.close()
