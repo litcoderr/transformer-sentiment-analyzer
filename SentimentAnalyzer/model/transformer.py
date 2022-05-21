@@ -23,9 +23,9 @@ class ModelConfig(Serializable):
         # number of classes
         self.n_class = 2
 
-class Transformer(nn.Module):
+class TransformerV1(nn.Module):
     def __init__(self, config: ModelConfig, device):
-        super(Transformer, self).__init__()
+        super(TransformerV1, self).__init__()
         self.config = config
 
         self.embedding = nn.Embedding(num_embeddings=self.config.tokenizer_size,
@@ -40,6 +40,27 @@ class Transformer(nn.Module):
         positional_encoded = self.positional(embedded)
         encoder_output = self.encoder(positional_encoded)
         encoder_output = torch.mean(encoder_output, dim=1)
+        latent = self.fc1(encoder_output)
+        logit = self.fc2(latent)
+        return logit
+
+class TransformerV1_1(nn.Module):
+    def __init__(self, config: ModelConfig, device):
+        super(TransformerV1_1, self).__init__()
+        self.config = config
+
+        self.embedding = nn.Embedding(num_embeddings=self.config.tokenizer_size,
+                                      embedding_dim=self.config.embedding_dim)
+        self.positional = PositionalEncoding(embedding_dim=self.config.embedding_dim, device=device)
+        self.encoder = Encoder(config=self.config.encoder_config)
+        self.fc1 = nn.Linear(self.config.embedding_dim, self.config.fc_dim)
+        self.fc2 = nn.Linear(self.config.fc_dim, self.config.n_class)
+
+    def forward(self, x):
+        embedded = self.embedding(x)
+        positional_encoded = self.positional(embedded)
+        encoder_output = self.encoder(positional_encoded)
+        encoder_output = encoder_output[:,-1,:]
         latent = self.fc1(encoder_output)
         logit = self.fc2(latent)
         return logit

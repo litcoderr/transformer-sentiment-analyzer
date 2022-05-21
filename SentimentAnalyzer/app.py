@@ -5,8 +5,12 @@ import transformers
 from transformers import BertTokenizerFast, EncoderDecoderModel
 from typing import List, Union
 
-from .model.transformer import ModelConfig, Transformer
+from .model.transformer import ModelConfig, TransformerV1, TransformerV1_1
 
+MODEL_VERSION = {
+    "v1.0": TransformerV1,
+    "v1.1": TransformerV1_1
+}
 
 class App:
     def __init__(self, config, device="cuda"):
@@ -15,10 +19,10 @@ class App:
 
         self.tokenizer = BertTokenizerFast.from_pretrained("kykim/bertshared-kor-base")
 
-        self.model = Transformer(config=self.model_config, device=self.device)
+        self.model = MODEL_VERSION[config.version](config=self.model_config, device=self.device)
         self.model = self.model.to(self.device)
 
-        # TODO load checkpoint if exists
+        # load checkpoint if exists
         if os.path.exists(config.ckpt_path):
             checkpoint = torch.load(config.ckpt_path)
             self.model.load_state_dict(checkpoint["checkpoint"])
@@ -32,7 +36,7 @@ class App:
         fwd_res = self.forward(tensor, is_train=False)
 
         # TODO postprocess tensor to text
-        pass
+        return fwd_res
 
     def forward(self, input_tensor: torch.Tensor, is_train=True):
         if is_train:

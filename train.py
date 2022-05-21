@@ -1,15 +1,15 @@
 import os
+from pathlib import Path
 import secrets
 from tqdm import tqdm
-from importify import Serializable
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
+from config import TrainConfig
 from SentimentAnalyzer import App
-from SentimentAnalyzer.model.transformer import ModelConfig
 from SentimentAnalyzer.data.dataset import NaverTrainDataset, NaverTestDataset
 
 def collate_fn(b):
@@ -35,33 +35,6 @@ def collate_fn(b):
     batch_label = torch.squeeze(batch_label, 1)
     batch_label = batch_label.long()
     return batch_tensor, batch_label
-
-class TrainConfig(Serializable):
-    def __init__(self):
-        super(TrainConfig, self).__init__()
-        self.version = "v1.0"
-        
-        self.config_file = ""
-        self.device = "cuda"
-        # dataloader options
-        self.batch_size = 16
-        self.shuffle = True
-        self.num_workers = 4
-        
-        # learning rate
-        self.lr = 0.001
-
-        # checkpoint option
-        # where the training should start from
-        self.start_idx = 0
-        self.ckpt_path = ""
-        self.save_rate = 10 # every (ckpt_rate) ammount of epoch, save ckpt and config file
-
-        # test option
-        self.test_rate = 10 # every (test_rate) ammount of epoch, perform testing
-
-        # model configuration
-        self.model_config = ModelConfig()
 
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -96,7 +69,8 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(app.model.parameters(), lr=config.lr)
 
     # tensorboard
-    log_dir = os.path.join(current_dir, "tensorlog")
+    log_dir = os.path.join(current_dir, "tensorlog", config.version)
+    Path(log_dir).mkdir(parents=True, exist_ok=True)
     writer = SummaryWriter(log_dir=log_dir)
 
     epoch_idx = start_epoch_idx
