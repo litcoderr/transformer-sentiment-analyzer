@@ -86,6 +86,7 @@ if __name__ == "__main__":
             # output: [b, n_classes]
             # label: [b]
             output = app.forward(tensor, is_train=True)
+            # TODO resolve nan output
 
             # compute accuracy
             # argmax: [b]
@@ -107,6 +108,7 @@ if __name__ == "__main__":
         total_acc = total_acc.detach().cpu().numpy()
         total_loss /= len(train_dataset) 
         total_acc = (total_acc / len(train_dataset)) * 100
+        print(total_loss)
 
         writer.add_scalar("Loss/train", total_loss, epoch_idx)
         writer.add_scalar("Acc/train", total_acc, epoch_idx)
