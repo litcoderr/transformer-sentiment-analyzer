@@ -6,7 +6,7 @@ from config import TrainConfig
 from SentimentAnalyzer import App
 
 if __name__ == "__main__":
-    version_name = "v1.1"
+    version_name = "v1.1_mini"
     checkpoint_dir = "./SentimentAnalyzer/checkpoints"
     json_paths = glob.glob(os.path.join(checkpoint_dir, "{}*.json".format(version_name)))
     for json_path in json_paths:

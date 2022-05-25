@@ -5,17 +5,17 @@ from SentimentAnalyzer.model.transformer import ModelConfig
 class TrainConfig(Serializable):
     def __init__(self):
         super(TrainConfig, self).__init__()
-        self.version = "v1.1"
+        self.version = "v1.1_mini"
         
         self.config_file = ""
         self.device = "cuda"
         # dataloader options
-        self.batch_size = 16
+        self.batch_size = 128
         self.shuffle = True
         self.num_workers = 4
         
         # learning rate
-        self.lr = 0.001
+        self.lr = 0.0001
 
         # checkpoint option
         # where the training should start from

@@ -7,7 +7,7 @@ class SelfAttnConfig(Serializable):
     def __init__(self, input_size):
         super(SelfAttnConfig, self).__init__()
         self.input_size = input_size
-        self.hidden_dim = 512
+        self.hidden_dim = 32
 
 class SelfAttention(nn.Module):
     def __init__(self, config: SelfAttnConfig):
@@ -39,7 +39,7 @@ class SelfAttention(nn.Module):
 class MultiHeadAttnConfig(Serializable):
     def __init__(self, attn_config: SelfAttnConfig):
         super(MultiHeadAttnConfig, self).__init__()
-        self.n_head = 8
+        self.n_head = 4
         self.attn_config = attn_config
 
 class MultiHeadAttention(nn.Module):
