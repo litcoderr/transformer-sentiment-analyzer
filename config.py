@@ -5,7 +5,7 @@ from SentimentAnalyzer.model.transformer import ModelConfig
 class TrainConfig(Serializable):
     def __init__(self):
         super(TrainConfig, self).__init__()
-        self.version = "v1.1_mini"
+        self.version = "v1_res"
         
         self.config_file = ""
         self.device = "cuda"

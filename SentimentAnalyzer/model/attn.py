@@ -63,4 +63,34 @@ class MultiHeadAttention(nn.Module):
         # x: [b, l, input_size]
         x = self.linear(x)
         return x
+
+class ResidualMultiHeadAttention(nn.Module):
+    def __init__(self, config: MultiHeadAttnConfig):
+        super(ResidualMultiHeadAttention, self).__init__()
+        self.config = config
+        self.attns = nn.ModuleList([SelfAttention(config=self.config.attn_config)
+                 for _ in range(self.config.n_head)])
+        self.linear = nn.Linear(self.config.attn_config.input_size*self.config.n_head,
+                                self.config.attn_config.input_size)
+        self.fc = nn.Linear(self.config.attn_config.input_size,
+                            self.config.attn_config.input_size)
+
+    def forward(self, x):
+        # x: [b, l, input_size]
+        heads = []
+        for i in range(self.config.n_head):
+            # res: [b, l, input_size]
+            res = self.attns[i](x)
+            heads.append(res)
+        # attn_output: [b, l, input_size*n_head]
+        attn_output = torch.cat(heads, 2)
+        # attn_output: [b, l, input_size]
+        attn_output = self.linear(attn_output)
+        # attn_output: [b, l, input_size], residual connection
+        attn_output += x.clone()
+        # attn_output: [b, l, input_size], residual connection
+        attn_output += self.fc(attn_output.clone())
+
+        return attn_output
+        
         
