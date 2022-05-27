@@ -1,13 +1,8 @@
-from importify import Serializable
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class SelfAttnConfig(Serializable):
-    def __init__(self, input_size):
-        super(SelfAttnConfig, self).__init__()
-        self.input_size = input_size
-        self.hidden_dim = 32
+from ..config import SelfAttnConfig, MultiHeadAttnConfig
 
 class SelfAttention(nn.Module):
     def __init__(self, config: SelfAttnConfig):
@@ -35,12 +30,6 @@ class SelfAttention(nn.Module):
         q_v = torch.matmul(q_k, value)
 
         return q_v
-
-class MultiHeadAttnConfig(Serializable):
-    def __init__(self, attn_config: SelfAttnConfig):
-        super(MultiHeadAttnConfig, self).__init__()
-        self.n_head = 4
-        self.attn_config = attn_config
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, config: MultiHeadAttnConfig):

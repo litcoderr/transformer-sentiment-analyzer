@@ -1,27 +1,10 @@
-from importify import Serializable
 import torch
 import torch.nn as nn
 from collections import OrderedDict
 
+from ..config import ModelConfig, EncoderConfig
 from .encoding import PositionalEncoding
 from .attn import MultiHeadAttention, MultiHeadAttnConfig, SelfAttnConfig, ResidualMultiHeadAttention
-
-class ModelConfig(Serializable):
-    def __init__(self):
-        super(ModelConfig, self).__init__()
-        self.tokenizer_size = 42000
-
-        # embedding
-        self.embedding_dim = 32
-
-        # Encoder
-        self.encoder_config = EncoderConfig(input_size=self.embedding_dim)
-
-        # Fully Connected
-        self.fc_dim = 64
-
-        # number of classes
-        self.n_class = 2
 
 class TransformerV1(nn.Module):
     def __init__(self, config: ModelConfig, device):
@@ -85,15 +68,6 @@ class TransformerV1_residual(nn.Module):
         latent = self.fc1(encoder_output)
         logit = self.fc2(latent)
         return logit
-
-class EncoderConfig(Serializable):
-    def __init__(self, input_size):
-        super(EncoderConfig, self).__init__()
-        self.input_size = input_size
-        self.n_layer = 3
-        self.multi_head_attn = MultiHeadAttnConfig(
-                                attn_config=SelfAttnConfig(
-                                    input_size=self.input_size))
 
 class Encoder(nn.Module):
     def __init__(self, config: EncoderConfig):

@@ -1,11 +1,11 @@
 
 from importify import Serializable
-from SentimentAnalyzer.model.transformer import ModelConfig
+from SentimentAnalyzer.model.config import ModelConfig
 
 class TrainConfig(Serializable):
     def __init__(self):
         super(TrainConfig, self).__init__()
-        self.version = "v1_res"
+        self.version = "v1_res_tall"
         
         self.config_file = ""
         self.device = "cuda"

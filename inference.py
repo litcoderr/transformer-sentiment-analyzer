@@ -3,7 +3,6 @@ import numpy as np
 from config import TrainConfig
 from SentimentAnalyzer import App
 
-
 if __name__ == "__main__":
     config = TrainConfig()
     config.parse()

@@ -5,15 +5,18 @@ import transformers
 from transformers import BertTokenizerFast, EncoderDecoderModel
 from typing import List, Union
 
-from .model.transformer import ModelConfig, TransformerV1, TransformerV1_1, TransformerV1_residual
+from .model.pytorch.transformer import ModelConfig, TransformerV1, TransformerV1_1, TransformerV1_residual
 
+# TODO specify model versions based on framework (pytorch/tensorflow)
 MODEL_VERSION = {
     "v1.0": TransformerV1, # mean of all encoder output
     "v1.1": TransformerV1_1, # lr 0.001, use last encoder output
     "v1.11": TransformerV1_1, # lr 0.0001, use last encoder output
     "v1_mini": TransformerV1_1, # lr 0.0001, use last encoder output, minified version for easier training
     "v1.1_mini": TransformerV1_1, # lr 0.0001, use last encoder output, minified version for easier training
-    "v1_res": TransformerV1_residual # lr 0.0001, use last encoder output, minified version for easier training
+    "v1_res": TransformerV1_residual, # lr 0.0001, use last encoder output, minified version for easier training
+    "v1_res_fat": TransformerV1_residual, # lr 0.0001, fat version (more number of heads)
+    "v1_res_tall": TransformerV1_residual # lr 0.0001, fat version (more number of heads)
 }
 
 class App:
