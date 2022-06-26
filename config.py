@@ -8,7 +8,7 @@ class TrainConfig(Serializable):
         self.version = "v1_res_tall"
         
         self.config_file = ""
-        self.device = "cuda"
+        self.device = "cpu"
         # dataloader options
         self.batch_size = 128
         self.shuffle = True

@@ -20,9 +20,9 @@ MODEL_VERSION = {
 }
 
 class App:
-    def __init__(self, config, device="cuda"):
+    def __init__(self, config):
         self.model_config = config.model_config # model configuration
-        self.device = device
+        self.device = config.device
 
         self.tokenizer = BertTokenizerFast.from_pretrained("kykim/bertshared-kor-base")
 

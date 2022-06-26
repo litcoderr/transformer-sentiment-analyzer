@@ -4,11 +4,15 @@ from tqdm import tqdm
 from array import array
 
 from SentimentAnalyzer.app import App
-from .data_downloader import DATASET_DIR
 from .dataset import read_raw, DATA_PATH
+from config import TrainConfig
 
 if __name__ == "__main__":
-    app = App()
+    config = TrainConfig()
+    config.parse()
+    if config.config_file:
+        _, config = TrainConfig.import_json(path=config.config_file)
+    app = App(config=config)
 
     # preprocess
     for typ in DATA_PATH.keys():
